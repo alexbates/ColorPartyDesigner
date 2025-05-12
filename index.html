@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dance Floor Designer</title>
+  <style>
+    /* Reset & base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: sans-serif;
+      background-color: #fafafa;
+      color: #333;
+    }
+    
+    /* Header Bar */
+    .header {
+      background-color: rgb(10, 79, 129);
+      color: #fff;
+      width: 100%;
+      padding: 10px; /* increased to fit the new buttons */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .header .header-left {
+      margin-left: 10px;
+    }
+    .header .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 10px;
+    }
+    .header .header-right button {
+      font-size: 16px;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      color: #333;
+    }
+    .header .header-right button:hover {
+      background-color: #ddd;
+    }
+    .header .header-right button:active {
+      background-color: #ccc;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      background-color: #e0e0e0;
+      width: 100%;
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative; /* For positioning certain items if needed */
+    }
+    .controls-bar label {
+      font-size: 16px;
+      margin-right: 5px;
+    }
+    .controls-bar select,
+    .controls-bar button,
+    .controls-bar input[type="checkbox"] {
+      font-size: 16px;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .controls-bar select:hover,
+    .controls-bar button:hover {
+      background-color: #ddd;
+    }
+    .controls-bar button:active {
+      background-color: #ccc;
+    }
+
+    /* Custom Color Select Styles */
+    .custom-select {
+      position: relative;
+      display: inline-block;
+      width: 270px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+    .custom-select .selected-option {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+    }
+    .custom-select .selected-option .color-square {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 1px solid #ccc;
+      flex-shrink: 0;
+    }
+    .custom-select .options {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      z-index: 10;
+      max-height: 460px;
+      overflow-y: auto;
+      padding: 0;
+      margin: 0;
+    }
+    .custom-select .options li {
+      list-style: none;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .custom-select .options li .color-square {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 1px solid #ccc;
+      flex-shrink: 0;
+    }
+    .custom-select .options li:hover {
+      background-color: #ddd;
+    }
+
+    /* For the canvas */
+    #gridCanvas {
+      border: 1px solid #444;
+      display: block;
+      margin: 20px auto;
+      background-color: #fff;
+    }
+
+    /* Container around the Import button and dropdown */
+    .import-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* The dropdown list for server-based import files */
+    .import-dropdown {
+      position: absolute;
+      font-weight: normal;
+      top: 100%;
+      left: 0;
+      margin-top: 0;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      z-index: 10;
+      list-style: none;
+      padding: 0;
+      display: none; /* hidden by default */
+      font-size: 16px; /* revert so it looks consistent with the old style */
+      color: #333;     /* revert text color */
+    }
+    .import-dropdown li {
+      padding: 6px 12px;
+      cursor: pointer;
+      color: #333;
+    }
+    .import-dropdown li:hover {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">Color Party Dance Floor Designer</div>
+    <div class="header-right">
+      <!-- SWAPPED the button order so the import is on the left and the export is on the right -->
+      <div class="import-container">
+        <button id="importBtn">Import JSON</button>
+        <ul id="importDropdown" class="import-dropdown">
+          <li data-type="server" data-value="floor_start.json">floor_start.json</li>
+          <li data-type="server" data-value="floor_start_old.json">floor_start_old.json</li>
+          <li data-type="server" data-value="floor_gameover.json">floor_gameover.json</li>
+          <li data-type="server" data-value="floor_3shapes.json">floor_3shapes.json</li>
+          <li data-type="server" data-value="floor_4section_bricks.json">floor_4section_bricks.json</li>
+          <li data-type="server" data-value="floor_5circles.json">floor_5circles.json</li>
+          <li data-type="server" data-value="floor_9squares.json">floor_9squares.json</li>
+          <li data-type="server" data-value="floor_cactus.json">floor_cactus.json</li>
+          <li data-type="server" data-value="floor_carrots.json">floor_carrots.json</li>
+          <li data-type="server" data-value="floor_chest.json">floor_chest.json</li>
+          <li data-type="server" data-value="floor_concentric_squares.json">floor_concentric_squares.json</li>
+          <li data-type="server" data-value="floor_connected_rings.json">floor_connected_rings.json</li>
+          <li data-type="server" data-value="floor_duck.json">floor_duck.json</li>
+          <li data-type="server" data-value="floor_hamburger.json">floor_hamburger.json</li>
+          <li data-type="server" data-value="floor_hearts.json">floor_hearts.json</li>
+          <li data-type="server" data-value="floor_mushroom.json">floor_mushroom.json</li>
+          <li data-type="server" data-value="floor_pepe.json">floor_pepe.json</li>
+          <li data-type="server" data-value="floor_pumpkin.json">floor_pumpkin.json</li>
+          <li data-type="server" data-value="floor_stars.json">floor_stars.json</li>
+          <li data-type="server" data-value="floor_turtles.json">floor_turtles.json</li>
+          <li data-type="server" data-value="floor_under_water.json">floor_under_water.json</li>
+          <li data-type="server" data-value="floor_variation_1.json">floor_variation_1.json</li>
+          <li data-type="server" data-value="floor_variation_2.json">floor_variation_2.json</li>
+          <li data-type="browse" data-value="browse">Browse...</li>
+        </ul>
+      </div>
+
+      <button id="exportBtn">Export JSON</button>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <!-- Custom Color Select Dropdown -->
+    <!-- Hidden native select for storing color values -->
+    <select id="colorSelect" style="display: none;">
+      <option value="WHITE_TERRACOTTA" style="background-color: #D7D7D7;">WHITE_TERRACOTTA</option>
+      <option value="ORANGE_TERRACOTTA" style="background-color: #D87F33;">ORANGE_TERRACOTTA</option>
+      <option value="MAGENTA_TERRACOTTA" style="background-color: #B24CD8;">MAGENTA_TERRACOTTA</option>
+      <option value="LIGHT_BLUE_TERRACOTTA" style="background-color: #6699D8;">LIGHT_BLUE_TERRACOTTA</option>
+      <option value="YELLOW_TERRACOTTA" style="background-color: #E5E533;">YELLOW_TERRACOTTA</option>
+      <option value="LIME_TERRACOTTA" style="background-color: #7FCC19;">LIME_TERRACOTTA</option>
+      <option value="PINK_TERRACOTTA" style="background-color: #F27FA5;">PINK_TERRACOTTA</option>
+      <option value="GRAY_TERRACOTTA" style="background-color: #4C4C4C; color: white;">GRAY_TERRACOTTA</option>
+      <option value="LIGHT_GRAY_TERRACOTTA" style="background-color: #999999;">LIGHT_GRAY_TERRACOTTA</option>
+      <option value="CYAN_TERRACOTTA" style="background-color: #4C7F99;">CYAN_TERRACOTTA</option>
+      <option value="PURPLE_TERRACOTTA" style="background-color: #7F3FB2;">PURPLE_TERRACOTTA</option>
+      <option value="BLUE_TERRACOTTA" style="background-color: #334CB2;">BLUE_TERRACOTTA</option>
+      <option value="BROWN_TERRACOTTA" style="background-color: #664C33;">BROWN_TERRACOTTA</option>
+      <option value="GREEN_TERRACOTTA" style="background-color: #667F33;">GREEN_TERRACOTTA</option>
+      <option value="RED_TERRACOTTA" style="background-color: #993333;">RED_TERRACOTTA</option>
+      <option value="BLACK_TERRACOTTA" style="background-color: #191919; color: white;">BLACK_TERRACOTTA</option>
+    </select>
+    <div id="customColorSelect" class="custom-select"></div>
+
+    <label for="strokeWidthSelect">Stroke Width:</label>
+    <select id="strokeWidthSelect">
+      <script>
+        // Goes up to 32
+        for (let i = 1; i <= 32; i++) {
+          document.write(`<option value="${i}">${i}</option>`);
+        }
+      </script>
+    </select>
+
+    <label for="shapeSelect">Shape:</label>
+    <select id="shapeSelect">
+      <option value="square" selected>Square</option>
+      <option value="circle">Circle</option>
+      <option value="diamond">Diamond</option>
+      <option value="triangle_up">Triangle (Up)</option>
+      <option value="triangle_down">Triangle (Down)</option>
+      <option value="triangle_left">Triangle (Left)</option>
+      <option value="triangle_right">Triangle (Right)</option>
+    </select>
+
+    <label for="randomizeCheckbox">Randomize</label>
+    <input type="checkbox" id="randomizeCheckbox" />
+
+    <button id="undoBtn">Undo</button>
+    <button id="redoBtn">Redo</button>
+
+    <!-- Hidden file input for "Browse" -->
+    <input type="file" id="jsonImport" accept=".json" style="display: none;">
+  </div>
+
+  <canvas id="gridCanvas" width="640" height="640"></canvas>
+
+  <script>
+    // ---- Canvas & Drawing Setup ----
+    const gridSize = 64;
+    const cellSize = 10;
+
+    // The grid, storing color names for each cell (64x64).
+    let grid = [];
+    for (let i = 0; i < gridSize; i++) {
+      grid[i] = [];
+      for (let j = 0; j < gridSize; j++) {
+        grid[i][j] = "LIGHT_GRAY_TERRACOTTA";
+      }
+    }
+
+    // Terracotta color lookup
+    const terracottaColors = {
+      "WHITE_TERRACOTTA": "#D7D7D7",
+      "ORANGE_TERRACOTTA": "#D87F33",
+      "MAGENTA_TERRACOTTA": "#B24CD8",
+      "LIGHT_BLUE_TERRACOTTA": "#6699D8",
+      "YELLOW_TERRACOTTA": "#E5E533",
+      "LIME_TERRACOTTA": "#7FCC19",
+      "PINK_TERRACOTTA": "#F27FA5",
+      "GRAY_TERRACOTTA": "#4C4C4C",
+      "LIGHT_GRAY_TERRACOTTA": "#999999",
+      "CYAN_TERRACOTTA": "#4C7F99",
+      "PURPLE_TERRACOTTA": "#7F3FB2",
+      "BLUE_TERRACOTTA": "#334CB2",
+      "BROWN_TERRACOTTA": "#664C33",
+      "GREEN_TERRACOTTA": "#667F33",
+      "RED_TERRACOTTA": "#993333",
+      "BLACK_TERRACOTTA": "#191919"
+    };
+
+    const canvas = document.getElementById("gridCanvas");
+    const ctx = canvas.getContext("2d");
+
+    /**
+     * Draws the entire 64x64 grid onto the canvas.
+     */
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Fill each cell with its color
+      for (let x = 0; x < gridSize; x++) {
+        for (let y = 0; y < gridSize; y++) {
+          const colorName = grid[x][y];
+          const hex = terracottaColors[colorName] || "#999999";
+          ctx.fillStyle = hex;
+          ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+      }
+      // Draw the grid lines
+      ctx.strokeStyle = "#666";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= gridSize; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * cellSize, 0);
+        ctx.lineTo(i * cellSize, gridSize * cellSize);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i * cellSize);
+        ctx.lineTo(gridSize * cellSize, i * cellSize);
+        ctx.stroke();
+      }
+    }
+
+    // ---- Basic geometry helpers for shapes ----
+
+    function triArea(x1, y1, x2, y2, x3, y3) {
+      return Math.abs(x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2)) / 2;
+    }
+
+    // Returns true if (px,py) is inside the triangle formed by (Ax,Ay),(Bx,By),(Cx,Cy).
+    function pointInTriangle(px, py, Ax, Ay, Bx, By, Cx, Cy) {
+      const areaOrig = triArea(Ax, Ay, Bx, By, Cx, Cy);
+      const area1 = triArea(px, py, Bx, By, Cx, Cy);
+      const area2 = triArea(Ax, Ay, px, py, Cx, Cy);
+      const area3 = triArea(Ax, Ay, Bx, By, px, py);
+      // If sum of sub-areas = original area, it's inside (or on) the triangle
+      const sum = area1 + area2 + area3;
+      return Math.abs(sum - areaOrig) < 0.0001;
+    }
+
+    /**
+     * Helper to figure out bounding box and geometric center for a stroke size.
+     * We want an exact N×N bounding box, where N=stroke, and to “center” it
+     * around the mouse position:
+     *   - For odd strokes, center on the middle of the clicked cell
+     *   - For even strokes, center between four cells
+     */
+    function getBoundingBox(mouseCol, mouseRow, stroke) {
+      const half = stroke / 2;
+      let centerX, centerY;
+      if (stroke % 2 === 1) {
+        // Odd stroke: center is the middle of the clicked cell
+        centerX = mouseCol + 0.5;
+        centerY = mouseRow + 0.5;
+      } else {
+        // Even stroke: center is the boundary between cells
+        centerX = mouseCol;
+        centerY = mouseRow;
+      }
+
+      // minCol => maxCol inclusive => total stroke columns
+      const minCol = Math.floor(centerX - half);
+      const maxCol = minCol + stroke - 1;
+      const minRow = Math.floor(centerY - half);
+      const maxRow = minRow + stroke - 1;
+
+      return { minCol, maxCol, minRow, maxRow, centerX, centerY, half };
+    }
+
+    /**
+     * Returns all (col,row) cells that belong to the chosen shape with the
+     * given stroke size, centered around the mouse location.
+     */
+    function getBrushCells(mouseCol, mouseRow, stroke, shape) {
+      const box = getBoundingBox(mouseCol, mouseRow, stroke);
+      const minC = box.minCol;
+      const maxC = box.maxCol;
+      const minR = box.minRow;
+      const maxR = box.maxRow;
+      const cx  = box.centerX;
+      const cy  = box.centerY;
+      const half = box.half;
+
+      const cells = [];
+      for (let col = minC; col <= maxC; col++) {
+        for (let row = minR; row <= maxR; row++) {
+          if (col < 0 || col >= gridSize || row < 0 || row >= gridSize) {
+            continue;
+          }
+          // center of this cell in "canvas coords"
+          const cellCenterX = col + 0.5;
+          const cellCenterY = row + 0.5;
+
+          const dx = cellCenterX - cx;
+          const dy = cellCenterY - cy;
+          const distSq = dx*dx + dy*dy;
+          const manhattan = Math.abs(dx) + Math.abs(dy);
+          let include = false;
+
+          switch (shape) {
+            case "square":
+              // Everything in the bounding box
+              include = true;
+              break;
+            case "circle":
+              // If distance <= half => inside circle
+              if (distSq <= half * half) {
+                include = true;
+              }
+              break;
+            case "diamond":
+              // If manhattan distance <= half => inside diamond
+              if (manhattan <= half) {
+                include = true;
+              }
+              break;
+            case "triangle_up": {
+              // apex top, base bottom
+              const Ax = cx;         const Ay = cy - half;  // top apex
+              const Bx = cx - half;  const By = cy + half;  // bottom-left
+              const Cx = cx + half;  const Cy = cy + half;  // bottom-right
+              if (pointInTriangle(cellCenterX, cellCenterY, Ax, Ay, Bx, By, Cx, Cy)) {
+                include = true;
+              }
+              break;
+            }
+            case "triangle_down": {
+              // apex bottom
+              const Ax = cx;         const Ay = cy + half;
+              const Bx = cx - half;  const By = cy - half;
+              const Cx = cx + half;  const Cy = cy - half;
+              if (pointInTriangle(cellCenterX, cellCenterY, Ax, Ay, Bx, By, Cx, Cy)) {
+                include = true;
+              }
+              break;
+            }
+            case "triangle_left": {
+              // apex left
+              const Ax = cx - half;  const Ay = cy;
+              const Bx = cx + half;  const By = cy - half;
+              const Cx = cx + half;  const Cy = cy + half;
+              if (pointInTriangle(cellCenterX, cellCenterY, Ax, Ay, Bx, By, Cx, Cy)) {
+                include = true;
+              }
+              break;
+            }
+            case "triangle_right": {
+              // apex right
+              const Ax = cx + half;  const Ay = cy;
+              const Bx = cx - half;  const By = cy - half;
+              const Cx = cx - half;  const Cy = cy + half;
+              if (pointInTriangle(cellCenterX, cellCenterY, Ax, Ay, Bx, By, Cx, Cy)) {
+                include = true;
+              }
+              break;
+            }
+          }
+
+          if (include) {
+            cells.push({ col, row });
+          }
+        }
+      }
+      return cells;
+    }
+
+    /**
+     * Overlay the shape on mousemove if not drawing
+     */
+    function updateOverlay(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const mouseCol = Math.floor(x / cellSize);
+      const mouseRow = Math.floor(y / cellSize);
+
+      const stroke = parseInt(document.getElementById("strokeWidthSelect").value);
+      const shape = document.getElementById("shapeSelect").value;
+
+      const brushCells = getBrushCells(mouseCol, mouseRow, stroke, shape);
+      drawGrid();
+      ctx.fillStyle = "#f6e58d";
+      ctx.globalAlpha = 0.3;
+      brushCells.forEach(cell => {
+        ctx.fillRect(cell.col * cellSize, cell.row * cellSize, cellSize, cellSize);
+      });
+      ctx.globalAlpha = 1.0;
+    }
+
+    /**
+     * Paint the shape onto the grid with the selected color on mousedown/drag
+     */
+    function applyBrush(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const mouseCol = Math.floor(x / cellSize);
+      const mouseRow = Math.floor(y / cellSize);
+
+      const stroke = parseInt(document.getElementById("strokeWidthSelect").value);
+      const shape = document.getElementById("shapeSelect").value;
+      const brushCells = getBrushCells(mouseCol, mouseRow, stroke, shape);
+
+      const selectedColor = document.getElementById("colorSelect").value;
+      brushCells.forEach(cell => {
+        grid[cell.col][cell.row] = selectedColor;
+      });
+      updateOverlay(e);
+    }
+
+    // ---- Undo/Redo Functionality ----
+    let undoStack = [];
+    let redoStack = [];
+    let drawingStateSaved = false;
+
+    function saveState() {
+      let state = grid.map(row => row.slice());
+      undoStack.push(state);
+      if (undoStack.length > 20) {
+        undoStack.shift();
+      }
+      redoStack = [];
+    }
+
+    let isDrawing = false;
+    canvas.addEventListener("mousedown", function(e) {
+      if (!drawingStateSaved) {
+        saveState();
+        drawingStateSaved = true;
+      }
+      isDrawing = true;
+      applyBrush(e);
+    });
+    canvas.addEventListener("mousemove", function(e) {
+      if (isDrawing) {
+        applyBrush(e);
+      } else {
+        updateOverlay(e);
+      }
+    });
+    canvas.addEventListener("mouseup", function() {
+      isDrawing = false;
+      drawingStateSaved = false;
+      drawGrid();
+    });
+    canvas.addEventListener("mouseleave", function() {
+      isDrawing = false;
+      drawingStateSaved = false;
+      drawGrid();
+    });
+
+    document.getElementById("undoBtn").addEventListener("click", function() {
+      if (undoStack.length > 0) {
+        let currentState = grid.map(row => row.slice());
+        redoStack.push(currentState);
+        grid = undoStack.pop();
+        drawGrid();
+      }
+    });
+    document.getElementById("redoBtn").addEventListener("click", function() {
+      if (redoStack.length > 0) {
+        let currentState = grid.map(row => row.slice());
+        undoStack.push(currentState);
+        grid = redoStack.pop();
+        drawGrid();
+      }
+    });
+
+    // ---- Export JSON ----
+    document.getElementById("exportBtn").addEventListener("click", function() {
+      // Add RANDOMIZE at top of export; use "True"/"False"
+      let exportObj = {
+        "RANDOMIZE": document.getElementById("randomizeCheckbox").checked ? "True" : "False"
+      };
+      // Then add each color
+      for (let key in terracottaColors) {
+        exportObj[key] = [];
+      }
+      for (let x = 0; x < gridSize; x++) {
+        for (let y = 0; y < gridSize; y++) {
+          const colorName = grid[x][y];
+          exportObj[colorName].push({ x: x, z: y });
+        }
+      }
+      const jsonStr = JSON.stringify(exportObj, null, 2);
+      
+      // Download as file
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dancefloor_layout.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ---- Import JSON (with dropdown + file input) ----
+    const importBtn = document.getElementById("importBtn");
+    const importDropdown = document.getElementById("importDropdown");
+    const fileInput = document.getElementById("jsonImport");
+
+    // Show/hide the dropdown when clicking the import button
+    importBtn.addEventListener("click", () => {
+      importDropdown.style.display = (importDropdown.style.display === "block") ? "none" : "block";
+    });
+
+    // Hide dropdown if click outside
+    document.addEventListener("click", (e) => {
+      if (!importBtn.contains(e.target) && !importDropdown.contains(e.target)) {
+        importDropdown.style.display = "none";
+      }
+    });
+
+    // Handle each dropdown option
+    importDropdown.addEventListener("click", (e) => {
+      const li = e.target.closest("li");
+      if (!li) return;
+      // Hide dropdown
+      importDropdown.style.display = "none";
+
+      if (!confirm("Warning: importing will overwrite the current canvas. Proceed?")) {
+        return;
+      }
+      const type = li.getAttribute("data-type");
+      const value = li.getAttribute("data-value");
+
+      if (type === "server") {
+        // Fetch the JSON from local server
+        fetch(value)
+          .then(response => response.json())
+          .then(data => {
+            importJsonData(data);
+          })
+          .catch(err => {
+            alert("Failed to load " + value);
+          });
+      } else if (type === "browse") {
+        // Trigger file input
+        fileInput.value = "";
+        fileInput.click();
+      }
+    });
+
+    // File input change event
+    fileInput.addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          try {
+            const data = JSON.parse(event.target.result);
+            importJsonData(data);
+          } catch (err) {
+            alert("Invalid JSON file.");
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Helper: import JSON data into the grid.
+    function importJsonData(data) {
+      // Clear to LIGHT_GRAY_TERRACOTTA
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          grid[i][j] = "LIGHT_GRAY_TERRACOTTA";
+        }
+      }
+      // Fill from JSON; ignore RANDOMIZE except for presence
+      for (let color in data) {
+        if (color === "RANDOMIZE") {
+          // If you want to do something with RANDOMIZE on import, do it here
+          continue;
+        }
+        if (data.hasOwnProperty(color) && terracottaColors[color]) {
+          data[color].forEach(coord => {
+            const x = coord.x;
+            const y = coord.z;
+            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
+              grid[x][y] = color;
+            }
+          });
+        }
+      }
+      drawGrid();
+    }
+
+    // ---- Custom Color Select Dropdown ----
+    (function() {
+      const colorSelectHidden = document.getElementById("colorSelect");
+      const customColorSelect = document.getElementById("customColorSelect");
+      
+      // Create the element showing the currently selected option.
+      const selectedOptionDiv = document.createElement("div");
+      selectedOptionDiv.className = "selected-option";
+      customColorSelect.appendChild(selectedOptionDiv);
+      
+      // Create the dropdown list.
+      const optionsList = document.createElement("ul");
+      optionsList.className = "options";
+      customColorSelect.appendChild(optionsList);
+      
+      // Populate options from the hidden select.
+      for (let i = 0; i < colorSelectHidden.options.length; i++) {
+        const option = colorSelectHidden.options[i];
+        const li = document.createElement("li");
+        li.setAttribute("data-value", option.value);
+        
+        // Create the color square.
+        const square = document.createElement("span");
+        square.className = "color-square";
+        square.style.backgroundColor = option.style.backgroundColor || "";
+        
+        // Create the text element.
+        const textSpan = document.createElement("span");
+        textSpan.className = "option-text";
+        textSpan.textContent = option.textContent;
+        
+        li.appendChild(square);
+        li.appendChild(textSpan);
+        optionsList.appendChild(li);
+        
+        li.addEventListener("click", function() {
+          const value = this.getAttribute("data-value");
+          colorSelectHidden.value = value;
+          selectedOptionDiv.innerHTML = "";
+          const newSquare = document.createElement("span");
+          newSquare.className = "color-square";
+          newSquare.style.backgroundColor = option.style.backgroundColor || "";
+          const newText = document.createElement("span");
+          newText.className = "option-text";
+          newText.textContent = option.textContent;
+          selectedOptionDiv.appendChild(newSquare);
+          selectedOptionDiv.appendChild(newText);
+          optionsList.style.display = "none";
+        });
+      }
+      
+      // Set default selection to the first option.
+      if (colorSelectHidden.options.length > 0) {
+        const defaultOption = colorSelectHidden.options[0];
+        colorSelectHidden.value = defaultOption.value;
+        selectedOptionDiv.innerHTML = "";
+        const newSquare = document.createElement("span");
+        newSquare.className = "color-square";
+        newSquare.style.backgroundColor = defaultOption.style.backgroundColor || "";
+        const newText = document.createElement("span");
+        newText.className = "option-text";
+        newText.textContent = defaultOption.textContent;
+        selectedOptionDiv.appendChild(newSquare);
+        selectedOptionDiv.appendChild(newText);
+      }
+      
+      // Toggle dropdown on click.
+      selectedOptionDiv.addEventListener("click", function() {
+        optionsList.style.display = (optionsList.style.display === "block") ? "none" : "block";
+      });
+      
+      // Close dropdown when clicking outside.
+      document.addEventListener("click", function(e) {
+        if (!customColorSelect.contains(e.target)) {
+          optionsList.style.display = "none";
+        }
+      });
+    })();
+
+    // Initial render
+    drawGrid();
+  </script>
+</body>
+</html>
